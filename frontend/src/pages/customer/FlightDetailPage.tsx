@@ -49,7 +49,7 @@ export default function FlightDetailPage() {
     { name: '', email: '', selectedSeatId: null, selectedSeatLabel: '' },
   ]);
   const [savedPassengers, setSavedPassengers] = useState<SavedPassenger[]>([]);
-  const [showPassengerSelector, setShowPassengerSelector] = useState<number | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!flightId) return;
@@ -137,11 +137,10 @@ export default function FlightDetailPage() {
     setPassengers((prev) =>
       prev.map((p, i) =>
         i === index
-          ? { ...p, name: passenger.name, email: passenger.email }
+          ? { ...p, name: passenger.name, email: passenger.email, selectedSeatId: p.selectedSeatId, selectedSeatLabel: p.selectedSeatLabel }
           : p
       )
     );
-    setShowPassengerSelector(null);
   }
 
   async function handleBook() {
@@ -157,6 +156,7 @@ export default function FlightDetailPage() {
       return;
     }
     setIsBooking(true);
+    setBookingError(null);
     try {
       const payload: PassengerInput[] = passengers.map((p) => ({
         name: p.name.trim(),
@@ -169,8 +169,9 @@ export default function FlightDetailPage() {
       });
       toast.success('Booking confirmed!');
       navigate(`/bookings/${booking.id}`);
-    } catch {
-      toast.error('Booking failed — please try again');
+    } catch (err: unknown) {
+      const errorMessage = (err as { message?: string })?.message ?? 'Booking failed — please try again';
+      setBookingError(errorMessage);
     } finally {
       setIsBooking(false);
     }
@@ -201,6 +202,47 @@ export default function FlightDetailPage() {
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
         Back to search
       </Link>
+
+      {/* Booking Error Modal */}
+      {bookingError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="mb-2 text-center text-lg font-semibold text-gray-900">Booking Failed</h3>
+            <p className="mb-4 text-center text-sm text-gray-600">{bookingError}</p>
+            
+            {/* Flight and Seat Info */}
+            <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs text-gray-500">Flight</span>
+                <span className="text-sm font-semibold text-gray-900">{flight.flight_number}</span>
+              </div>
+              {passengers.map((p, idx) => (
+                <div key={idx} className="mb-2 flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Passenger {idx + 1}</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {p.selectedSeatLabel || 'No seat'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setBookingError(null)}
+              className="w-full rounded-lg bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Flight Info Header */}
       <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -326,7 +368,17 @@ export default function FlightDetailPage() {
         {/* Booking Form */}
         <div className="lg:col-span-2">
           <div className="sticky top-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Passengers</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Passengers</h2>
+              {isAuthenticated && (
+                <Link
+                  to="/passengers"
+                  className="text-xs text-primary-600 hover:text-primary-700 hover:underline"
+                >
+                  Manage passengers →
+                </Link>
+              )}
+            </div>
 
             <div className="space-y-4">
               {passengers.map((p, i) => (
@@ -339,68 +391,61 @@ export default function FlightDetailPage() {
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-700">Passenger {i + 1}</span>
-                    <div className="flex gap-2">
-                      {savedPassengers.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowPassengerSelector(showPassengerSelector === i ? null : i);
-                          }}
-                          className="text-xs text-primary-600 hover:text-primary-700"
-                        >
-                          {showPassengerSelector === i ? 'Hide' : 'Select from list'}
-                        </button>
-                      )}
-                      {passengers.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removePassenger(i); }}
-                          className="text-xs text-red-500 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
+                    {passengers.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removePassenger(i); }}
+                        className="text-xs text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  {showPassengerSelector === i && savedPassengers.length > 0 && (
-                    <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-2">
-                      <p className="mb-2 px-2 text-xs font-medium text-gray-500">Select a saved passenger:</p>
-                      <div className="space-y-1">
+                  
+                  {isAuthenticated && savedPassengers.length > 0 && (
+                    <div className="mb-3">
+                      <label className="mb-1 block text-xs font-medium text-gray-500">
+                        Select from saved passengers
+                      </label>
+                      <select
+                        value={p.name ? savedPassengers.find(sp => sp.name === p.name && sp.email === p.email)?.id || '' : ''}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          const selectedId = Number(e.target.value);
+                          if (selectedId) {
+                            const selected = savedPassengers.find(sp => sp.id === selectedId);
+                            if (selected) {
+                              selectSavedPassenger(selected, i);
+                            }
+                          }
+                        }}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none bg-white"
+                      >
+                        <option value="">-- Select a passenger --</option>
                         {savedPassengers.map((sp) => (
-                          <button
-                            key={sp.id}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              selectSavedPassenger(sp, i);
-                            }}
-                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm hover:border-primary-300 hover:bg-primary-50 transition-colors"
-                          >
-                            <p className="font-medium text-gray-900">{sp.name}</p>
-                            <p className="text-xs text-gray-500">{sp.email}</p>
-                          </button>
+                          <option key={sp.id} value={sp.id}>
+                            {sp.name} ({sp.email})
+                          </option>
                         ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  {p.name && (
+                    <div className="space-y-2">
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <label className="mb-0.5 block text-xs font-medium text-gray-500">Full name</label>
+                        <p className="text-sm font-medium text-gray-900">{p.name}</p>
+                      </div>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <label className="mb-0.5 block text-xs font-medium text-gray-500">Email address</label>
+                        <p className="text-sm font-medium text-gray-900">{p.email}</p>
                       </div>
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Full name"
-                      value={p.name}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updatePassenger(i, 'name', e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      value={p.email}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => updatePassenger(i, 'email', e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none"
-                    />
+                  
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500">Seat assignment</label>
                     {p.selectedSeatLabel ? (
                       <div className="flex items-center gap-2 rounded-lg bg-primary-50 px-3 py-2 text-sm">
                         <svg className="h-4 w-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

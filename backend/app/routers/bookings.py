@@ -54,6 +54,31 @@ def create_booking(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one passenger required",
         )
+    
+    existing_bookings = (
+        db.query(Booking)
+        .filter(
+            Booking.user_id == current_user.id,
+            Booking.flight_id == data.flight_id,
+            Booking.status != BookingStatus.CANCELLED,
+        )
+        .all()
+    )
+    
+    existing_passengers: dict[str, str] = {}
+    for booking in existing_bookings:
+        for passenger in booking.passengers:
+            existing_passengers[passenger.email.lower()] = passenger.seat_assignment or "No seat"
+    
+    for p in data.passengers:
+        email_lower = p.email.lower()
+        if email_lower in existing_passengers:
+            seat_info = existing_passengers[email_lower]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Passenger with email {p.email} is already booked on this flight (Seat: {seat_info})",
+            )
+    
     total_price = flight.price * len(data.passengers)
     booking = Booking(
         user_id=current_user.id,

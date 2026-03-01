@@ -1,12 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Spinner from '@/components/ui/Spinner';
 import * as airportService from '@/services/airport.service';
 import * as flightService from '@/services/flight.service';
 import type { Airport, Flight } from '@/types';
+
+// 自定义 TileLayer 组件，带错误处理和备用源
+function CustomTileLayer() {
+  const map = useMap();
+  const [tileError, setTileError] = useState(false);
+
+  const handleTileError = useCallback(() => {
+    if (!tileError) {
+      console.warn('OpenStreetMap tile failed, switching to backup');
+      setTileError(true);
+    }
+  }, [tileError]);
+
+  // 备用地图源：CartoDB Positron
+  const backupUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
+  return (
+    <TileLayer
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      url={tileError ? backupUrl : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
+      eventHandlers={{
+        tileerror: handleTileError
+      }}
+    />
+  );
+}
 
 const airportIcon = new L.DivIcon({
   html: `<div style="width:24px;height:24px;background:#2563eb;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>`,
@@ -96,10 +122,7 @@ export default function RouteMapPage() {
               scrollWheelZoom={true}
               style={{ height: '100%', width: '100%' }}
             >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+              <CustomTileLayer />
               {airports.map((airport) => (
                 <Marker
                   key={airport.id}
