@@ -6,7 +6,8 @@ import { useAuthStore } from '@/stores/auth.store';
 import * as flightService from '@/services/flight.service';
 import * as seatService from '@/services/seat.service';
 import * as bookingService from '@/services/booking.service';
-import type { Flight, Seat, PassengerInput } from '@/types';
+import * as passengerService from '@/services/passenger.service';
+import type { Flight, Seat, PassengerInput, SavedPassenger } from '@/types';
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString([], {
@@ -47,6 +48,8 @@ export default function FlightDetailPage() {
   const [passengers, setPassengers] = useState<PassengerForm[]>([
     { name: '', email: '', selectedSeatId: null, selectedSeatLabel: '' },
   ]);
+  const [savedPassengers, setSavedPassengers] = useState<SavedPassenger[]>([]);
+  const [showPassengerSelector, setShowPassengerSelector] = useState<number | null>(null);
 
   useEffect(() => {
     if (!flightId) return;
@@ -62,6 +65,15 @@ export default function FlightDetailPage() {
       ]);
       setFlight(f);
       setSeats(s);
+      
+      if (isAuthenticated) {
+        try {
+          const saved = await passengerService.fetchSavedPassengers();
+          setSavedPassengers(saved);
+        } catch {
+          console.error('Failed to load saved passengers');
+        }
+      }
     } catch {
       toast.error('Failed to load flight details');
     } finally {
@@ -119,6 +131,17 @@ export default function FlightDetailPage() {
     setPassengers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
     );
+  }
+
+  function selectSavedPassenger(passenger: SavedPassenger, index: number) {
+    setPassengers((prev) =>
+      prev.map((p, i) =>
+        i === index
+          ? { ...p, name: passenger.name, email: passenger.email }
+          : p
+      )
+    );
+    setShowPassengerSelector(null);
   }
 
   async function handleBook() {
@@ -316,16 +339,51 @@ export default function FlightDetailPage() {
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-700">Passenger {i + 1}</span>
-                    {passengers.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); removePassenger(i); }}
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
-                    )}
+                    <div className="flex gap-2">
+                      {savedPassengers.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPassengerSelector(showPassengerSelector === i ? null : i);
+                          }}
+                          className="text-xs text-primary-600 hover:text-primary-700"
+                        >
+                          {showPassengerSelector === i ? 'Hide' : 'Select from list'}
+                        </button>
+                      )}
+                      {passengers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removePassenger(i); }}
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {showPassengerSelector === i && savedPassengers.length > 0 && (
+                    <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                      <p className="mb-2 px-2 text-xs font-medium text-gray-500">Select a saved passenger:</p>
+                      <div className="space-y-1">
+                        {savedPassengers.map((sp) => (
+                          <button
+                            key={sp.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectSavedPassenger(sp, i);
+                            }}
+                            className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm hover:border-primary-300 hover:bg-primary-50 transition-colors"
+                          >
+                            <p className="font-medium text-gray-900">{sp.name}</p>
+                            <p className="text-xs text-gray-500">{sp.email}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <input
                       type="text"

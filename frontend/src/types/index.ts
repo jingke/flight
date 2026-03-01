@@ -8,3 +8,4 @@ export type { AppNotification } from './notification';
 export type { LoyaltyPoints, LoyaltyRedeem } from './loyalty';
 export type { ModificationRequest, ModificationCreate } from './modification';
 export type { BookingsPerFlightReport, PopularRouteReport, PeakTimeReport } from './report';
+export type { SavedPassenger, SavedPassengerCreate, SavedPassengerUpdate } from './passenger';

@@ -17,6 +17,7 @@ import ComplaintsPage from '@/pages/customer/ComplaintsPage';
 import NotificationsPage from '@/pages/customer/NotificationsPage';
 import LoyaltyPage from '@/pages/customer/LoyaltyPage';
 import RouteMapPage from '@/pages/customer/RouteMapPage';
+import PassengersPage from '@/pages/customer/PassengersPage';
 import DashboardPage from '@/pages/admin/DashboardPage';
 import FlightManagementPage from '@/pages/admin/FlightManagementPage';
 import ReservationsPage from '@/pages/admin/ReservationsPage';
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
         children: [
           { path: '/bookings', element: <BookingsPage /> },
           { path: '/bookings/:bookingId', element: <BookingDetailPage /> },
+          { path: '/passengers', element: <PassengersPage /> },
           { path: '/complaints', element: <ComplaintsPage /> },
           { path: '/notifications', element: <NotificationsPage /> },
           { path: '/loyalty', element: <LoyaltyPage /> },

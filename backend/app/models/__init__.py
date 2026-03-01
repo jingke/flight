@@ -8,6 +8,7 @@ from app.models.complaint import Complaint
 from app.models.modification_request import ModificationRequest
 from app.models.notification import Notification
 from app.models.loyalty import LoyaltyPoints
+from app.models.saved_passenger import SavedPassenger
 
 __all__ = [
     "User",
@@ -20,4 +21,5 @@ __all__ = [
     "ModificationRequest",
     "Notification",
     "LoyaltyPoints",
+    "SavedPassenger",
 ]

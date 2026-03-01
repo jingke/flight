@@ -27,3 +27,4 @@ class User(Base):
     modification_requests = relationship("ModificationRequest", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     loyalty_points = relationship("LoyaltyPoints", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    saved_passengers = relationship("SavedPassenger", back_populates="user", cascade="all, delete-orphan")

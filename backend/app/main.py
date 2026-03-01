@@ -15,6 +15,7 @@ from app.routers import (
     loyalty,
     modifications,
     notifications,
+    passengers,
     reports,
     seats,
 )
@@ -51,6 +52,7 @@ app.include_router(airports.router)
 app.include_router(flights.router)
 app.include_router(bookings.router)
 app.include_router(seats.router)
+app.include_router(passengers.router)
 app.include_router(complaints.router)
 app.include_router(modifications.router)
 app.include_router(notifications.router)
