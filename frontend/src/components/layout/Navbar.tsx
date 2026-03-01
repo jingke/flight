@@ -30,6 +30,9 @@ export default function Navbar() {
                 <Link to="/bookings" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
                   My Bookings
                 </Link>
+                <Link to="/passengers" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
+                  Passengers
+                </Link>
                 <Link to="/map" className="text-sm font-medium text-gray-600 hover:text-primary-600 transition-colors">
                   Route Map
                 </Link>
